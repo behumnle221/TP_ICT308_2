@@ -46,17 +46,33 @@
 ### 5. Thread-safety
 - Toutes les méthodes de `GestionReservations` sont `synchronized` : l'accès concurrent au `HashSet` est protégé.
 
+### 6. Performance & Multithreading (IHM Swing)
+- **SwingWorker** pour opérations longues :
+  - `lancerChargementAsynchrone()` : chargement du fichier `.dat` en tâche de fond (`doInBackground`), mise à jour de l'UI dans `done()`.
+  - `sauvegarderEtQuitter()` : sauvegarde sérialisée en arrière-plan avant fermeture.
+- **Barre de progression** (`JProgressBar`) :
+  - Mode indéterminé pendant chargement/sauvegarde.
+  - Message contextuel : "Chargement des donnees...", "Sauvegarde en cours...", "Pret - X reservation(s) chargee(s)".
+- **Timer Swing** (`javax.swing.Timer`, 5s) : rafraîchissement automatique de la grille via `ModeleGrille.mettreAJour()` sans bloquer l'EDT.
+- **Désactivation temporaire** de la grille pendant les traitements pour éviter les accès concurrents.
+
 ### Points forts démontrés
 - Zéro fuite de ressource (try-with-resources systématique).
 - Séparation nette couche métier / couche persistance.
 - Unicité garantie par la collection, pas par vérification manuelle redondante.
 - Format de date ISO-8601 (`LocalDateTime`) pour éviter les ambiguïtés.
 
-### Compilation & Exécution
+### Compilation & Exécution (IHM Swing)
 ```bash
-javac -d bin src/*.java
-java -cp bin Main
+javac -d bin src/model/*.java src/service/*.java src/ihm/*.java
+java -cp bin ihm.FenetrePrincipale
 ```
+
+### IHM Swing
+- **FenetrePrincipale** : JFrame avec `JTable` (grille 8h–18h × 3 salles), renderer personnalisé (vert = libre, rose = occupé).
+- **ModeleGrille** : `AbstractTableModel` qui interroge `GestionReservations` pour remplir les cellules.
+- **FormulaireReservation** : `JDialog` modal ; clic sur cellule libre ouvre le formulaire (ID + nom client), valide et ajoute via le service métier.
+- **Sauvegarde** : bouton Quitter → `FichierIndexe.sauvegarder` → `System.exit(0)`.
 
 ### Format de date attendu
 `YYYY-MM-DDTHH:MM` (ex: `2026-06-26T09:00`)
